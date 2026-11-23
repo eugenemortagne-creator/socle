@@ -514,7 +514,7 @@ input:focus,select:focus{border-color:var(--accent);box-shadow:none;outline:none
 
 input,select,textarea{font-size:16px!important}
 /* La page ne défile plus : seul le contenu défile, la barre du bas reste fixe */
-html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+html,body{overscroll-behavior:none;margin:0}
 body{padding:0!important}
 #scroll{position:fixed;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
@@ -537,7 +537,7 @@ nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;transform:translateZ(
 /* Barre d'onglets façon iOS */
 nav.tabs{padding:0}
 .tabs-in{max-width:none;margin:0;border-radius:0;box-shadow:0 -1px 0 var(--line);background:color-mix(in srgb, var(--surface) 86%, transparent);
-  padding:6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px))}
+  padding:4px max(10px, env(safe-area-inset-right, 0px)) max(4px, calc(env(safe-area-inset-bottom, 0px) - 14px)) max(10px, env(safe-area-inset-left, 0px))}
 .tabs button{font-size:10.5px;font-weight:500;padding:5px 2px;border-radius:12px}
 .tabs button[aria-current=page]{background:none;color:var(--accent)}
 .tabs .plus{width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;box-shadow:0 8px 18px -6px color-mix(in srgb, var(--accent) 70%, transparent)}
@@ -2047,6 +2047,20 @@ autoRun();
 render(true);
 initCloud();
 
+
+/* iOS 26 (appli installée) : la zone d'affichage reste parfois trop courte au lancement, ce qui laisse
+   une bande noire sous la barre. On force le navigateur à recalculer la hauteur. */
+(function(){
+  const els = () => [document.getElementById('scroll'), document.querySelector('nav.tabs')].filter(Boolean);
+  function remeasure(){
+    els().forEach(el=>{ const st = el.scrollTop; el.style.display='none'; void el.offsetHeight; el.style.display=''; el.scrollTop = st; });
+  }
+  [0,150,500,1200].forEach(t=>setTimeout(remeasure,t));
+  addEventListener('resize', ()=>setTimeout(remeasure,140)); addEventListener('pageshow', remeasure);
+  addEventListener('orientationchange', ()=>setTimeout(remeasure,300));
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(remeasure,100); });
+  document.addEventListener('focusout', ()=>setTimeout(remeasure,140));
+})();
 if ('serviceWorker' in navigator){ let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if (had) location.reload(); had = true; }); navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 })();
 </script>
