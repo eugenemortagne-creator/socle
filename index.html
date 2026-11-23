@@ -11,8 +11,8 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
 <title>Socle</title>
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
 <style>
 /* Layout : app bancaire mobile — en-tête, carte héros, sections en cartes et listes groupées, barre flottante avec + central */
 :root{
@@ -567,7 +567,7 @@ nav.tabs{bottom:var(--lift)!important}
 
 /* iOS 26 floute le contenu sous la barre d'état : on empêche tout contenu d'y passer */
 :root{--topcut:calc(env(safe-area-inset-top, 0px) + 30px)}
-html{background:var(--surface)}
+html{background:var(--bg)}
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--topcut);background:var(--bg);z-index:60;pointer-events:none}
 #scroll{top:var(--topcut)!important;padding-top:6px!important}
 .tabs-in{background:var(--surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
