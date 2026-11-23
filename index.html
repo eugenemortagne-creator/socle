@@ -566,7 +566,8 @@ nav.tabs{bottom:var(--lift)!important}
 #scroll{bottom:var(--lift)!important}
 
 /* iOS 26 floute le contenu sous la barre d'état : on empêche tout contenu d'y passer */
-:root{--topcut:calc(env(safe-area-inset-top, 0px) + 40px)}
+:root{--topcut:calc(env(safe-area-inset-top, 0px) + 30px)}
+html{background:var(--surface)}
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--topcut);background:var(--bg);z-index:60;pointer-events:none}
 #scroll{top:var(--topcut)!important;padding-top:6px!important}
 .tabs-in{background:var(--surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
@@ -2046,22 +2047,6 @@ autoRun();
 render(true);
 initCloud();
 
-/* iPhone : recolle la barre du bas au vrai bas de l'écran si le navigateur la laisse flotter */
-(function(){
-  const root = document.documentElement, probe = document.createElement('div');
-  probe.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:1px;pointer-events:none;opacity:0';
-  document.body.appendChild(probe);
-  function fix(){
-    try{
-      const sh = Math.max(screen.height, screen.width), vh = Math.round(probe.getBoundingClientRect().bottom);
-      const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-      const gap = (!standalone || innerHeight < innerWidth) ? 0 : sh - vh;
-      root.style.setProperty('--lift', (gap>0 && gap<140 ? -gap : 0)+'px');
-    }catch(_){}
-  }
-  fix(); addEventListener('resize', fix); addEventListener('orientationchange', fix); addEventListener('pageshow', fix);
-  document.addEventListener('visibilitychange', fix); setTimeout(fix, 500);
-})();
 if ('serviceWorker' in navigator){ let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if (had) location.reload(); had = true; }); navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 })();
 </script>
