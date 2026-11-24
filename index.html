@@ -11,8 +11,8 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="icon.png">
 <title>Socle</title>
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FFFDF8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#152129" media="(prefers-color-scheme: dark)">
 <style>
 /* Layout : app bancaire mobile — en-tête, carte héros, sections en cartes et listes groupées, barre flottante avec + central */
 :root{
@@ -583,6 +583,139 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--topcut)
 #scroll{top:var(--topcut)!important;padding-top:10px!important}
 .tabs-in{background:var(--surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 nav.tabs::after{content:"";position:absolute;left:0;right:0;top:100%;height:240px;background:var(--surface)}
+
+/* =====================================================================
+   THÈME « SOCLE PRO » — inspiré de Quittance (papier, encre, ocre)
+   ===================================================================== */
+@font-face{font-family:"Roboto Slab";src:url(fonts/roboto-slab-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Roboto Slab";src:url(fonts/roboto-slab-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Roboto Slab";src:url(fonts/roboto-slab-latin-700-normal.woff2) format("woff2");font-weight:700 900;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2");font-weight:600 900;font-display:swap}
+
+:root:root{
+  --bg:#F7F3EA; --glow:transparent; --surface:#FFFDF8; --surface-2:#F1EBDE; --surface-3:#E4DBC8; --ink:#1C2B33; --muted:#6E7A80; --line:rgba(28,43,51,.09);
+  --accent:#A67C2E; --accent-2:#C9A15A; --accent-ink:#FFFFFF; --accent-soft:rgba(166,124,46,.13); --gold:#A67C2E; --seg-on:#FFFDF8;
+  --hero-a:#111C22; --hero-b:#1C2B33; --hero-c:#2B404B; --hero-ink:#F7F3EA; --hero-muted:#AEB8BC; --hero-line:rgba(247,243,234,.12);
+  --good:#4F7A5B; --warn:#B07A22; --bad:#B4483B; --info:#3F6782;
+  --k1:#5C8A6A; --k2:#C08A3E; --k3:#4A7491; --k4:#B5584A; --k5:#3F8C8C; --k6:#C26A3D; --k7:#7A6597;
+  --card:#FFFDF8; --key:#F1EBDE;
+  --shadow:0 1px 0 rgba(28,43,51,.03), 0 10px 28px -18px rgba(28,43,51,.28);
+  --f-display:"Roboto Slab", Georgia, serif; --f-body:"IBM Plex Sans", -apple-system, system-ui, sans-serif;
+  --r:20px; --ease:cubic-bezier(.16,1,.3,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:root:not([data-theme="light"]){
+  --bg:#0D161B; --surface:#152129; --surface-2:#1D2C35; --surface-3:#283A44; --ink:#F3EEE3; --muted:#92A0A6; --line:rgba(243,238,227,.075);
+  --accent:#C9A15A; --accent-2:#E0BE7E; --accent-ink:#14212A; --accent-soft:rgba(201,161,90,.15); --gold:#C9A15A; --seg-on:#2A3D47;
+  --hero-a:#16242C; --hero-b:#1F323C; --hero-c:#2C4450; --hero-ink:#F7F3EA; --hero-muted:#A7B3B8; --hero-line:rgba(247,243,234,.1);
+  --good:#7FAE8B; --warn:#D9A651; --bad:#E07A6A; --info:#7FA6C2;
+  --k1:#77A884; --k2:#D9A651; --k3:#6F9BBB; --k4:#D97A6B; --k5:#5FAAA8; --k6:#DE8A5A; --k7:#A08CC4;
+  --card:#152129; --key:#1D2C35;
+  --shadow:0 1px 0 rgba(255,255,255,.025) inset, 0 14px 30px -20px rgba(0,0,0,.7);
+  color-scheme:dark;}}
+
+body{font-family:var(--f-body);background:var(--bg)!important;letter-spacing:.003em}
+h1,h2,h3,.big,.amt,.stat b,.month-nav b,.sim-out b,.amount .v,.keys button,.bilan-title{font-family:var(--f-display)!important;letter-spacing:-.01em}
+#title{font-weight:700;font-size:30px;letter-spacing:-.02em}
+.section h2,.sec-head h2{font-weight:700;font-size:19px}
+.label{text-transform:uppercase;letter-spacing:.09em;font-size:11px!important;font-weight:600}
+.top .hello span{color:var(--muted);text-transform:capitalize}
+
+/* Cartes */
+.panel,.list,.vault,.example,.bilan-cta,.insight-wrap{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--r)}
+.list{overflow:hidden}
+.example{background:var(--accent-soft)!important;border-color:color-mix(in srgb, var(--accent) 35%, transparent)}
+.pill{font-family:var(--f-body);font-weight:600;letter-spacing:.01em}
+
+/* Carte héros : carte bancaire premium */
+.hero{background:
+   radial-gradient(120% 90% at 100% 0%, rgba(201,161,90,.22), transparent 55%),
+   repeating-linear-gradient(135deg, rgba(247,243,234,.025) 0 2px, transparent 2px 9px),
+   linear-gradient(155deg,var(--hero-c) 0%,var(--hero-b) 48%,var(--hero-a) 100%)!important;
+  border:1px solid rgba(201,161,90,.28);box-shadow:0 24px 44px -26px rgba(17,28,34,.75), inset 0 1px 0 rgba(247,243,234,.08)!important;overflow:hidden}
+.hero::after{content:"";position:absolute;top:0;bottom:0;left:0;width:38%;z-index:0;pointer-events:none;display:block!important;
+  background:linear-gradient(100deg,transparent,rgba(247,243,234,.09),transparent);transform:translateX(-140%) skewX(-18deg);animation:heroShine 6s ease-in-out 1.2s infinite}
+@keyframes heroShine{0%,72%{transform:translateX(-160%) skewX(-18deg)}100%{transform:translateX(420%) skewX(-18deg)}}
+.hero > *{position:relative;z-index:1}
+.hero .label{color:var(--accent-2)!important;opacity:.95}
+.hero .big{font-weight:700;letter-spacing:-.03em}
+.hero .big small{color:var(--accent-2)!important}
+.up-badge{background:rgba(201,161,90,.18)!important;color:#F1D9A8!important;border:1px solid rgba(201,161,90,.3)}
+.hero-btn{background:rgba(247,243,234,.08)!important;border:1px solid rgba(247,243,234,.16)!important;color:var(--hero-ink)!important}
+
+/* Boutons */
+.btn{background:linear-gradient(180deg,var(--accent-2),var(--accent))!important;color:var(--accent-ink)!important;border:0;border-radius:16px;font-weight:600;letter-spacing:.01em;
+  box-shadow:0 12px 24px -14px var(--accent), inset 0 1px 0 rgba(255,255,255,.25);position:relative;overflow:hidden;
+  transition:transform .18s var(--spring), box-shadow .25s var(--ease), filter .2s}
+.btn:active{transform:scale(.96);box-shadow:0 6px 14px -10px var(--accent)}
+.btn.ghost{background:var(--surface-2)!important;color:var(--ink)!important;box-shadow:none;border:1px solid var(--line)}
+.btn.danger{background:color-mix(in srgb, var(--bad) 12%, transparent)!important;color:var(--bad)!important;box-shadow:none}
+.btn.danger.armed{background:var(--bad)!important;color:#fff!important}
+.link{color:var(--accent)!important;font-weight:600}
+.icon-btn{background:var(--surface)!important;border:1px solid var(--line)!important;color:var(--ink)!important;transition:transform .18s var(--spring)}
+.icon-btn:active{transform:scale(.9)}
+#toolsBtn[aria-current]{background:var(--accent)!important;color:var(--accent-ink)!important}
+
+/* Actions rapides */
+.qa .c{background:var(--surface)!important;border:1px solid var(--line);box-shadow:var(--shadow);color:var(--accent)!important;transition:transform .2s var(--spring), background .2s}
+.qa .main .c{background:linear-gradient(180deg,var(--accent-2),var(--accent))!important;color:var(--accent-ink)!important;border:0;box-shadow:0 12px 22px -12px var(--accent)}
+.qa button:active .c{transform:scale(.86)}
+.qa button{font-weight:600}
+
+/* Lignes et cartes interactives */
+.row,.env-row,.vault,.vault-mini,.bilan-cta,.min-card,.d-item{transition:transform .18s var(--spring), background-color .2s}
+.row:active,.env-row:active,.d-item:active{background:var(--surface-2)!important}
+.vault:active,.vault-mini:active,.bilan-cta:active,.min-card:active{transform:scale(.975)}
+.bar,.pl-track,.track{background:var(--surface-3)!important}
+.bar i,.pl-track i,.track i{border-radius:99px;transition:width .9s var(--ease)}
+.vault-mini{background:var(--surface)!important;border:1px solid var(--line);box-shadow:var(--shadow)}
+.vault-mini.add{background:transparent!important;border:1.5px dashed color-mix(in srgb, var(--accent) 45%, transparent);color:var(--accent);box-shadow:none}
+
+/* Sélecteurs */
+.seg{background:var(--surface-2)!important;border:1px solid var(--line);border-radius:14px}
+.seg button[aria-pressed=true]{background:var(--surface)!important;color:var(--ink)!important;box-shadow:0 4px 12px -6px rgba(0,0,0,.35)!important}
+.chips button{background:var(--surface-2)!important;border:1.5px solid transparent!important}
+.chips button[aria-pressed=true]{background:var(--accent-soft)!important;border-color:var(--accent)!important;transform:translateY(-1px)}
+.chips button:active{transform:scale(.95)}
+.tog[aria-checked=true]{background:var(--accent)!important}
+input,select,textarea{background:var(--surface-2)!important;border:1.5px solid var(--line)!important;font-family:var(--f-body)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 4px var(--accent-soft)!important;outline:none}
+input[type=range]{border:0!important;background:none!important;box-shadow:none!important;accent-color:var(--accent)}
+
+/* Clavier du bouton + */
+.keys button{border-radius:16px!important;background:var(--surface-2)!important;border:1px solid var(--line);font-weight:500;transition:transform .12s var(--spring), background .15s}
+.keys button:active{transform:scale(.9);background:var(--accent-soft)!important;color:var(--accent)}
+.amount .v{font-weight:700}
+.amount .v .cur{color:var(--accent)}
+
+/* Fenêtres */
+.sheet{background:var(--surface)!important;border-top:1px solid var(--line)}
+.sheet h2{font-weight:700}
+.scrim{background:rgba(10,18,22,.5)!important}
+.toast{background:var(--hero-b)!important;color:var(--hero-ink)!important;border:1px solid rgba(201,161,90,.35);box-shadow:0 18px 30px -16px rgba(0,0,0,.6)}
+.toast svg{color:var(--accent-2)}
+.alert-box{border-radius:16px}
+
+/* Barre d'onglets */
+.tabs-in{background:var(--surface)!important;box-shadow:0 -1px 0 var(--line)!important}
+.tabs button{color:var(--muted)!important;font-weight:500}
+.tabs button[aria-current=page]{color:var(--accent)!important;font-weight:600}
+.tabs button[aria-current=page]::before{background:var(--accent)!important}
+.tabs .plus{background:linear-gradient(180deg,var(--accent-2),var(--accent))!important;color:var(--accent-ink)!important;
+  box-shadow:0 0 0 5px var(--surface), 0 14px 26px -10px var(--accent)!important;transition:transform .25s var(--spring)!important}
+.tabs .plus:active{transform:scale(.88) rotate(90deg)!important}
+
+/* Effet d'onde au toucher */
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.16;transform:scale(0);animation:rip .6s var(--ease) forwards;z-index:0}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+
+/* Apparition douce des sections */
+.enter > *{animation:riseIn .55s var(--ease) both}
+.enter > *:nth-child(2){animation-delay:.04s}.enter > *:nth-child(3){animation-delay:.08s}.enter > *:nth-child(4){animation-delay:.12s}.enter > *:nth-child(5){animation-delay:.16s}.enter > *:nth-child(n+6){animation-delay:.2s}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.hero::after,.rip{display:none!important}.enter > *{animation:none!important}}
 </style>
 
 <div id="scroll">
@@ -2194,6 +2327,16 @@ initCloud();
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) setTimeout(remeasure,100); });
   document.addEventListener('focusout', ()=>setTimeout(remeasure,140));
 })();
+
+/* Effet d'onde au toucher sur les éléments interactifs */
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest && e.target.closest('.btn,.row,.env-row,.chips button,.seg button,.bilan-cta,.min-card,.vault,.d-item,.hero-btn');
+  if (!el || reduced) return;
+  const r = el.getBoundingClientRect(), d = Math.max(r.width, r.height)*2.2, sp = document.createElement('span');
+  sp.className = 'rip'; sp.style.width = sp.style.height = d+'px'; sp.style.left = (e.clientX-r.left-d/2)+'px'; sp.style.top = (e.clientY-r.top-d/2)+'px';
+  if (getComputedStyle(el).position==='static') el.style.position='relative';
+  el.style.overflow = el.style.overflow || 'hidden'; el.appendChild(sp); setTimeout(()=>sp.remove(), 650);
+}, {passive:true});
 if ('serviceWorker' in navigator){ let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if (had) location.reload(); had = true; }); navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 })();
 </script>
