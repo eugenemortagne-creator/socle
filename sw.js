@@ -1,4 +1,4 @@
-const CACHE='socle-v13';
+const CACHE='socle-v14';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon.png','./fonts/roboto-slab-latin-500-normal.woff2','./fonts/roboto-slab-latin-600-normal.woff2','./fonts/roboto-slab-latin-700-normal.woff2','./fonts/ibm-plex-sans-latin-400-normal.woff2','./fonts/ibm-plex-sans-latin-500-normal.woff2','./fonts/ibm-plex-sans-latin-600-normal.woff2'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
