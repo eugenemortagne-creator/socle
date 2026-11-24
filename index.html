@@ -971,45 +971,52 @@ function boughtSheet(p){
   }, null, 'Valider');
 }
 
-/* ---------- Épargne minimum ---------- */
+/* ---------- Épargne minimum du mois ---------- */
 const minOn = () => !!(S.minimum && S.minimum.montant > 0);
-function projection(dep=0, ret=0){
-  const K = curKey(), pl = plan(K);
-  const reste = pl.R>0 ? pl.R - pl.F - pl.Pv - spentMonth(K) - dep : 0;
-  return total() - ret + Math.min(0, reste);
+let guardEnv = null;
+/* Épargne du mois = salaire − prélèvements − achats prévus − enveloppes (plafond, ou plus si dépassé) − dépenses hors budget */
+function epargneMois(extra=0, envId=null, ret=0){
+  const K = curKey(), pl = plan(K); if (!(pl.R>0)) return null;
+  let used = horsEnv(K) + (envId ? 0 : extra);
+  S.enveloppes.forEach(e=>{ const sp = spent(e.id,K) + (e.id===envId ? extra : 0); used += e.plafond>0 ? Math.max(e.plafond, sp) : sp; });
+  return pl.R - pl.F - pl.Pv - used - ret;
 }
 function guard(dep, ret, doit){
+  const envId = guardEnv; guardEnv = null;
   if (!minOn() || (dep<=0 && ret<=0)) return doit();
-  const avant = projection(), apres = projection(dep, ret), m = S.minimum.montant;
-  if (apres >= m || apres >= avant) return doit();
-  swap(()=>guardSheet(apres, doit));
+  const avant = epargneMois(), apres = epargneMois(dep, envId, ret), m = S.minimum.montant;
+  if (apres===null || apres >= m || apres >= avant) return doit();
+  swap(()=>guardSheet(apres, ret>0, doit));
 }
-function guardSheet(apres, doit){
+function guardSheet(apres, isRet, doit){
   const m = S.minimum.montant, nom = S.minimum.nom || 'mon projet';
-  openSheet('Attention à ton minimum', `
-    <div class="alert-box">${ico('alert')}<div><b>Ton épargne passerait à ${fmt0(apres)}</b><p class="small">C'est sous ton minimum de <b>${fmt0(m)}</b> pour « ${esc(nom)} ». Il te manquerait <b>${fmt0(m-apres)}</b>.</p></div></div>
-    <label class="confirm"><input type="checkbox" id="g_ok"><span>Je sais que je passe sous mon minimum d'épargne et je valide quand même.</span></label>
+  openSheet('Attention à ton épargne', `
+    <div class="alert-box">${ico('alert')}<div><b>${isRet?'Ce retrait':'Cette dépense sort de ton budget'}</b><p class="small">Ton épargne du mois passerait à <b>${fmt0(apres)}</b>, sous ton minimum de <b>${fmt0(m)}</b> pour « ${esc(nom)} ». Il manquerait <b>${fmt0(m-apres)}</b>.</p></div></div>
+    <label class="confirm"><input type="checkbox" id="g_ok"><span>Je sais que je passe sous mon épargne minimum et je valide quand même.</span></label>
     <button type="button" class="btn ghost sm" data-min-edit="1">Changer mon minimum</button>`,
   () => { if (!document.getElementById('g_ok').checked) return err('Coche la case pour valider.'); closeSheet(); doit(); }, null, 'Valider quand même');
 }
 function minimumSheet(){
   const cur = S.minimum || {nom:'Mon projet', montant:''};
-  openSheet('Épargne minimum', `
-    <p class="small muted">Le montant d'épargne sous lequel tu ne veux pas descendre. Si une dépense ou un retrait te fait passer dessous (en comptant ton salaire, tes prélèvements et tes achats prévus du mois), Socle te prévient avant.</p>
+  openSheet('Épargne minimum du mois', `
+    <p class="small muted">Ce que tu veux mettre de côté chaque mois au minimum. Socle calcule : salaire − prélèvements − achats prévus − enveloppes. Les dépenses rangées dans une enveloppe, sans la dépasser, sont prévues. Si une dépense dépasse son enveloppe ou n'est rangée nulle part, et fait passer ton épargne du mois sous ce minimum, Socle te prévient avant.</p>
     <div class="field"><label for="mn_n">Pour quoi ?</label><input id="mn_n" value="${esc(cur.nom||'')}" placeholder="Ex. Mon projet"></div>
-    <div class="field"><label for="mn_m">Minimum à garder</label><input id="mn_m" inputmode="decimal" value="${cur.montant||''}" placeholder="Ex. 1500"></div>`,
+    <div class="field"><label for="mn_m">Minimum par mois</label><input id="mn_m" inputmode="decimal" value="${cur.montant||''}" placeholder="Ex. 1500"></div>`,
   () => {
     const m = num(val('mn_m')); if (!(m>0)) return err('Indique un montant.');
-    S.minimum = {nom: val('mn_n').trim() || 'Mon projet', montant:m}; closeSheet(); commit(`Minimum fixé à ${fmt0(m)}`);
+    S.minimum = {nom: val('mn_n').trim() || 'Mon projet', montant:m}; closeSheet(); commit(`Minimum fixé à ${fmt0(m)} par mois`);
   }, S.minimum ? () => { delete S.minimum; closeSheet(); commit('Minimum désactivé'); } : null);
 }
 function minCard(){
-  if (!minOn()) return `<button class="bilan-cta" data-act="minimum"><span class="ico" style="--kc:var(--accent)">${ico('shield')}</span><span class="grow"><b>Fixer une épargne minimum</b><span class="small muted">Socle te prévient avant de passer dessous</span></span>${ico('right','chev')}</button>`;
-  const m = S.minimum.montant, p = projection(), ok = p >= m, r = Math.max(0, Math.min(1, p/m));
+  if (!minOn()) return `<button class="bilan-cta" data-act="minimum"><span class="ico" style="--kc:var(--accent)">${ico('shield')}</span><span class="grow"><b>Fixer une épargne minimum</b><span class="small muted">Socle te prévient si une dépense hors budget la menace</span></span>${ico('right','chev')}</button>`;
+  const m = S.minimum.montant, p = epargneMois();
+  if (p===null) return `<button class="panel min-card" data-act="minimum"><span class="label">Épargne minimum · ${esc(S.minimum.nom||'Mon projet')}</span><span class="small muted">Saisis ton salaire du mois dans l'onglet Budget pour que Socle surveille tes ${fmt0(m)}.</span></button>`;
+  const ok = p >= m, r = Math.max(0, Math.min(1, p/m)), marge = p - m;
   return `<button class="panel min-card" data-act="minimum">
-    <span class="sec-head" style="width:100%"><span><span class="label">Épargne minimum · ${esc(S.minimum.nom||'Mon projet')}</span></span><span class="pill ${ok?'':'bad'}">${ok?'Respecté':'En dessous'}</span></span>
-    <span class="num" style="font-size:15px">Prévu fin de mois : <b style="color:var(--${ok?'ink':'bad'})">${fmt0(p)}</b> <span class="muted">/ ${fmt0(m)} minimum</span></span>
+    <span class="sec-head" style="width:100%"><span class="label">Épargne minimum · ${esc(S.minimum.nom||'Mon projet')}</span><span class="pill ${ok?'good':'bad'}">${ok?'Respecté':'En dessous'}</span></span>
+    <span class="num" style="font-size:15px">Épargne du mois prévue : <b style="color:var(--${ok?'ink':'bad'})">${fmt0(p)}</b> <span class="muted">/ ${fmt0(m)}</span></span>
     <span class="bar" style="--gc:var(${ok?'--good':'--bad'})"><i style="width:${(r*100).toFixed(1)}%"></i></span>
+    <span class="small muted">${ok?`Marge pour les dépenses hors budget : <b style="color:var(--ink)">${fmt0(marge)}</b>`:`Il manque ${fmt0(-marge)} ce mois-ci.`}</span>
   </button>`;
 }
 
@@ -1808,6 +1815,7 @@ function quickSheet(mode='dep', preset={}){
     const q = document.querySelector('#qmode [aria-pressed=true]').dataset.q;
     if (q==='dep'){
       const envId = pressed('q_env') || null, date = qDate(), note = val('q_n').trim();
+      guardEnv = envId;
       return guard(a, 0, () => {
       S.depenses.push({id:uid(), date, montant:a, envId, note});
       closeSheet(); buzz(12); const e = S.enveloppes.find(x=>x.id===envId);
