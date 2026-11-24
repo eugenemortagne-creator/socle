@@ -202,6 +202,7 @@ input,select{font:inherit;color:var(--ink);background:var(--surface-2);border:1p
 input[type=date],input[type=month]{-webkit-appearance:none;appearance:none;display:block;min-height:48px;max-width:100%;text-align:left}
 input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left}
 .grid2>*{min-width:0}
+[hidden]{display:none!important}
 .alert-box{display:flex;gap:12px;padding:14px;border-radius:14px;border:1.5px solid var(--bad);background:color-mix(in srgb, var(--bad) 12%, transparent)}
 .alert-box svg{width:22px;height:22px;color:var(--bad);flex:none;margin-top:2px}
 .alert-box p{margin:4px 0 0}
@@ -1795,10 +1796,10 @@ function quickSheet(mode='dep', preset={}){
   const chip = e => { const r = e.plafond>0 ? e.plafond - spent(e.id,K) : null;
     return `<button type="button" data-v="${e.id}" aria-pressed="${sel===e.id}">${catIco(e.cat)}<span>${esc(e.nom)}</span>${r!==null?`<small class="${r<0?'neg':''}">${r<0?'dépassé':'reste '+fmt0(r)}</small>`:''}</button>`; };
   const main = S.enveloppes.filter(used), rest = S.enveloppes.filter(e=>!used(e));
-  const openMore = sel==='' || rest.some(e=>e.id===sel);
-  const envChips = `<div class="chips">${main.map(chip).join('')}</div>
-    <details class="more" ${openMore?'open':''}><summary><span>Autres enveloppes</span><span class="muted small">${rest.length+1}</span>${ico('down','chev')}</summary>
-    <div class="chips">${rest.map(chip).join('')}<button type="button" data-v="" aria-pressed="${sel===''}">${catIco('autre')}<span>Hors enveloppe</span></button><button type="button" data-qnew="1" class="newchip"><span class="ico" style="--kc:var(--accent)">${ico('plus')}</span><span>Nouvelle</span></button></div></details>`;
+  const openMore = rest.some(e=>e.id===sel);
+  const envChips = `<div class="chips">${main.map(chip).join('')}<button type="button" data-v="" aria-pressed="${sel===''}">${catIco('autre')}<span>Pas prévue</span><small>hors enveloppe</small></button></div>
+    <details class="more" ${openMore?'open':''}><summary><span>Autres enveloppes</span><span class="muted small">${rest.length}</span>${ico('down','chev')}</summary>
+    <div class="chips">${rest.map(chip).join('')}<button type="button" data-qnew="1" class="newchip"><span class="ico" style="--kc:var(--accent)">${ico('plus')}</span><span>Nouvelle</span></button></div></details>`;
   openSheet('', `
     <div class="seg" id="qmode"><button type="button" data-q="dep" aria-pressed="${mode==='dep'}">Dépense</button><button type="button" data-q="ep" aria-pressed="${mode==='ep'}">Épargne</button><button type="button" data-q="ret" aria-pressed="${mode==='ret'}">Retrait</button></div>
     <input id="q_m" type="hidden" value="">
