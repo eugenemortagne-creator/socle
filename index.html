@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Socle">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
@@ -566,10 +566,10 @@ nav.tabs{bottom:var(--lift)!important}
 #scroll{bottom:var(--lift)!important}
 
 /* iOS 26 floute le contenu sous la barre d'état : on empêche tout contenu d'y passer */
-:root{--topcut:calc(env(safe-area-inset-top, 0px) + 30px)}
+:root{--topcut:env(safe-area-inset-top, 0px)}
 html{background:var(--bg)}
 body::before{content:"";position:fixed;left:0;right:0;top:0;height:var(--topcut);background:var(--bg);z-index:60;pointer-events:none}
-#scroll{top:var(--topcut)!important;padding-top:6px!important}
+#scroll{top:var(--topcut)!important;padding-top:10px!important}
 .tabs-in{background:var(--surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 nav.tabs::after{content:"";position:absolute;left:0;right:0;top:100%;height:240px;background:var(--surface)}
 </style>
