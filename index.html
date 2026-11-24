@@ -794,7 +794,7 @@ function blank(){
     objectifs:[{id:uid(),nom:"Fonds d'urgence",cible:2000,date:addMonths(12),couleur:0,initial:0}],
     mouvements:[], fixes:[], enveloppes:[
       {id:uid(),nom:'Essence',plafond:0,cat:'carburant'},{id:uid(),nom:'Courses',plafond:0,cat:'courses'},{id:uid(),nom:'Sorties & restos',plafond:0,cat:'sorties'}],
-    depenses:[], defi:Array(52).fill(false), sim:{initial:0,mensuel:150,taux:2.5,annees:10,mode:'revolut'}, envPack:false};
+    depenses:[], prevus:[], defi:Array(52).fill(false), sim:{initial:0,mensuel:150,taux:2.5,annees:10,mode:'revolut'}, envPack:false};
 }
 function migrate(d){
   if (!d || typeof d!=='object') return addPack(sample());
@@ -805,13 +805,14 @@ function migrate(d){
   out.comptes = (d.comptes||[]).map(c=>Object.assign({type:'autre'},c));
   out.fixes = d.fixes || (d.charges||[]).filter(c=>c.cat!=='epargne').map(c=>({id:c.id||uid(),nom:c.nom,montant:c.montant,jour:5,cat:c.cat==='envie'?'autre':'logement',freq:'mois'}));
   out.enveloppes = d.enveloppes || blank().enveloppes; out.depenses = d.depenses || [];
-  out.sim = Object.assign(blank().sim, d.sim||{});
+  out.sim = Object.assign(blank().sim, d.sim||{}); out.prevus = d.prevus || [];
   delete out.charges; return addPack(out);
 }
+function ensurePrevus(x){ if (x && !Array.isArray(x.prevus)) x.prevus = []; return x; }
 function readLocal(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
 function writeLocal(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
-let S = migrate(readLocal());
+let S = ensurePrevus(migrate(readLocal()));
 writeLocal();
 let tab = 'accueil', outil = 'simu', viewK = curKey(), discret = false, sliceSel = null;
 try{ discret = localStorage.getItem(KEY+'.discret')==='1'; }catch(e){}
@@ -878,8 +879,8 @@ const fixeMensuel = f => f.montant / FREQ[f.freq||'mois'].d;
 const totalFixes = () => S.fixes.reduce((s,f)=>s+fixeMensuel(f),0);
 const totalEnv = () => S.enveloppes.reduce((s,e)=>s+(e.plafond||0),0);
 const spent = (envId, k) => S.depenses.filter(d=>d.envId===envId && monthKey(d.date)===k).reduce((s,d)=>s+d.montant,0);
-const spentMonth = k => S.depenses.filter(d=>!d.fixeId && monthKey(d.date)===k).reduce((s,d)=>s+d.montant,0);
-const horsEnv = k => S.depenses.filter(d=>!d.envId && !d.fixeId && monthKey(d.date)===k).reduce((s,d)=>s+d.montant,0);
+const spentMonth = k => S.depenses.filter(d=>!d.fixeId && !d.prevu && monthKey(d.date)===k).reduce((s,d)=>s+d.montant,0);
+const horsEnv = k => S.depenses.filter(d=>!d.envId && !d.fixeId && !d.prevu && monthKey(d.date)===k).reduce((s,d)=>s+d.montant,0);
 function monthProgress(k){
   const K = curKey(); if (k<K) return {elapsed:1, left:0, day:daysIn(k)};
   if (k>K) return {elapsed:0, left:daysIn(k), day:0};
@@ -914,9 +915,57 @@ function moyenneSalaire(k){
   return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
 }
 function revenuMois(k){ const v = (S.revenus||{})[k]; if (v>0) return v; return moyenneSalaire(k) || S.revenu || 0; }
+/* ---------- Achats prévus ---------- */
+const nbMois = (a,b) => { const [y1,m1]=a.split('-').map(Number), [y2,m2]=b.split('-').map(Number); return (y2-y1)*12 + (m2-m1) + 1; };
+const prevuMensuel = p => p.montant / Math.max(1, nbMois(p.depuis, p.mois));
+const provPrevus = k => (S.prevus||[]).filter(p=>k>=p.depuis && k<=p.mois).reduce((s,p)=>s+prevuMensuel(p),0);
+function prevuStatus(p){
+  const K = curKey(), mois = nbMois(K, p.mois);
+  if (p.mois < K) return {etat:'warn', txt:'À acheter'};
+  if (p.mois === K) return {etat:'warn', txt:'Ce mois-ci'};
+  return {etat:'', txt:`Dans ${mois-1} mois`};
+}
+function prevuRow(p){
+  const st = prevuStatus(p), cap = monthName(p.mois);
+  return `<button class="row" data-edit-prevu="${p.id}">${catIco(p.cat||'tech')}<span class="grow"><span class="t">${esc(p.nom)}</span><span class="s">${cap.charAt(0).toUpperCase()+cap.slice(1)} · ${fmt(prevuMensuel(p))} / mois</span></span>
+    <span class="end"><span class="amt">${fmt0(p.montant)}</span><span class="pill ${st.etat}">${st.txt}</span></span></button>`;
+}
+function prevuSheet(p){
+  const isNew = !p; p = p || {nom:'', montant:'', mois:shiftKey(curKey(),1), cat:'tech'};
+  openSheet(isNew?'Nouvel achat prévu':esc(p.nom), `
+    <div class="field"><label for="p_n">Quoi ?</label><input id="p_n" value="${esc(p.nom)}" placeholder="Ex. Écran, pneus, vacances"></div>
+    <div class="grid2"><div class="field"><label for="p_m">Prix</label><input id="p_m" inputmode="decimal" value="${p.montant}"></div>
+    <div class="field"><label for="p_k">Mois de l'achat</label><input id="p_k" type="month" min="${curKey()}" value="${p.mois}"></div></div>
+    <div class="field"><label for="x_cat">Catégorie</label>${catSelect(p.cat||'tech')}</div>
+    <p class="note">${ico('info')}<span>Socle répartit le prix sur les mois qui restent et le met dans ton budget, pour que l'achat ne te surprenne pas.</span></p>
+    ${isNew?'':`<button type="button" class="btn" data-bought="${p.id}">${ico('check')} C'est acheté</button>`}`,
+  () => {
+    const nom = val('p_n').trim(), m = num(val('p_m')), k = (val('p_k')||'').slice(0,7);
+    if (!nom) return err('Dis ce que tu veux acheter.'); if (m<=0) return err('Indique le prix.'); if (!/^\d{4}-\d{2}$/.test(k)) return err('Choisis le mois.');
+    if (isNew && k < curKey()) return err('Choisis ce mois-ci ou plus tard.');
+    const rec = {id:p.id||uid(), nom, montant:m, mois:k, cat:val('x_cat'), depuis:p.depuis||curKey()};
+    if (rec.depuis > k) rec.depuis = k;
+    S.prevus = S.prevus || [];
+    if (isNew) S.prevus.push(rec); else Object.assign(S.prevus.find(x=>x.id===p.id), rec);
+    closeSheet(); commit(isNew?`Prévu : ${fmt(prevuMensuel(rec))} à mettre de côté par mois`:'Achat prévu modifié');
+  }, isNew?null:() => { S.prevus = S.prevus.filter(x=>x.id!==p.id); closeSheet(); commit('Achat prévu supprimé'); });
+}
+function boughtSheet(p){
+  openSheet('Acheté : '+esc(p.nom), `
+    <div class="field"><label for="b_m">Prix payé</label><input id="b_m" inputmode="decimal" value="${p.montant}"></div>
+    <div class="field"><label for="b_d">Date</label><input id="b_d" type="date" value="${today()}"></div>`,
+  () => {
+    const a = num(val('b_m')); if (a<=0) return err('Indique le prix payé.');
+    const i = S.prevus.findIndex(x=>x.id===p.id), item = S.prevus[i], dep = {id:uid(), date:val('b_d')||today(), montant:a, envId:null, prevu:true, note:p.nom};
+    S.depenses.push(dep); S.prevus.splice(i,1);
+    closeSheet(); commit(); setTimeout(()=>confetti(60), 250);
+    toast(`${p.nom} acheté${a<p.montant?` (${fmt0(p.montant-a)} économisés)`:''}`, () => { S.depenses = S.depenses.filter(x=>x.id!==dep.id); S.prevus.splice(i,0,item); commit('Annulé'); });
+  }, null, 'Valider');
+}
+
 function plan(k=curKey()){
-  const R = revenuMois(k), F = totalFixes(), E = totalEnv(), A = autoMensuel().total;
-  return {R, F, E, A, libre:R-F-E-A, capacite:R-F-E};
+  const R = revenuMois(k), F = totalFixes(), E = totalEnv(), A = autoMensuel().total, Pv = provPrevus(k);
+  return {R, F, E, A, Pv, libre:R-F-E-A-Pv, capacite:R-F-E-Pv};
 }
 
 /* ---------- Sauvegarde (sur ce téléphone) ---------- */
@@ -971,6 +1020,7 @@ function vAccueil(){
   ${bilanCta()}
   ${backupDue()?`<button class="bilan-cta" data-act="backup"><span class="ico" style="--kc:var(--k2)">${ico('download')}</span><span class="grow"><b>Fais ta sauvegarde du mois</b><span class="small muted">Un fichier à garder, au cas où</span></span>${ico('right','chev')}</button>`:''}
   ${monthCard(K)}
+  ${(S.prevus||[]).length?`<section class="section"><div class="sec-head"><h2>Achats prévus</h2><button class="link" data-tab="plan">Tout voir</button></div><div class="list">${[...S.prevus].sort((a,b)=>a.mois.localeCompare(b.mois)).slice(0,2).map(prevuRow).join('')}</div></section>`:''}
   ${alert?`<div class="list">${alert}</div>`:''}
   ${envs.length?`<section class="section">
     <div class="sec-head"><h2>Mes enveloppes</h2><button class="link" data-tab="plan">Tout voir</button></div>
@@ -1066,7 +1116,7 @@ function vPlan(){
   const K = viewK, isCur = K===curKey(), pl = plan(K), saisi = (S.revenus||{})[K] > 0, moy = moyenneSalaire(K);
   const fx = [...S.fixes].sort((a,b)=>((a.freq||'mois')!=='mois')-((b.freq||'mois')!=='mois') || a.jour-b.jour);
   const dep = S.depenses.filter(d=>monthKey(d.date)===K).sort((a,b)=>b.date.localeCompare(a.date));
-  const segs = [['Prélèvements fixes',pl.F,'--k3'],['Enveloppes',pl.E,'--k2'],['Épargne automatique',pl.A,'--k1']];
+  const segs = [['Prélèvements fixes',pl.F,'--k3'],['Enveloppes',pl.E,'--k2'],...(pl.Pv>0?[['Achats prévus',pl.Pv,'--k4']]:[]),['Épargne automatique',pl.A,'--k1']];
   const ho = horsEnv(K);
   return `
   <div class="month-nav"><button data-month="-1" aria-label="Mois précédent">${ico('left')}</button><b>${monthName(K)}</b><button data-month="1" aria-label="Mois suivant" ${isCur?'disabled':''}>${ico('right')}</button></div>
@@ -1098,6 +1148,12 @@ function vPlan(){
   </section>
 
   <section class="section">
+    <div class="sec-head"><h2>Achats prévus</h2><button class="link" data-act="new-prevu">+ Ajouter</button></div>
+    <p class="small muted">Un écran, des pneus, un voyage… Socle met de côté un peu chaque mois.</p>
+    <div class="list">${[...(S.prevus||[])].sort((a,b)=>a.mois.localeCompare(b.mois)).map(prevuRow).join('') || '<div class="empty">Rien de prévu pour l\'instant.</div>'}</div>
+  </section>
+
+  <section class="section">
     <div class="sec-head"><h2>Prélèvements</h2><button class="link" data-act="new-fixe">+ Ajouter</button></div>
     <p class="small muted">Ce qui part tout seul : assurance, salle de sport, forfait…</p>
     <div class="list">${fx.map(f=>fixeRow(f,K)).join('') || '<div class="empty">Aucun prélèvement pour l\'instant.</div>'}</div>
@@ -1118,6 +1174,7 @@ function fixeRow(f, k){
     <span class="end"><span class="amt">${mo?'−'+fmtA(f.montant):fmt(fixeMensuel(f))+' / mois'}</span><span class="pill ${st.etat}">${st.txt}</span></span></button>`;
 }
 function depRow(d){
+  if (d.prevu) return `<button class="row" data-edit-dep="${d.id}">${catIco('tech')}<span class="grow"><span class="t">${esc(d.note)}</span><span class="s">${dayMonth(d.date)} · Achat prévu</span></span><span class="amt">−${fmt(d.montant)}</span></button>`;
   if (d.fixeId){ const f = S.fixes.find(x=>x.id===d.fixeId); return `<button class="row" data-edit-dep="${d.id}">${catIco(f?f.cat:'autre')}<span class="grow"><span class="t">${esc(d.note)}</span><span class="s">${dayMonth(d.date)} · Prélèvement automatique</span></span><span class="amt">−${fmt(d.montant)}</span></button>`; }
   const e = S.enveloppes.find(x=>x.id===d.envId);
   return `<button class="row" data-edit-dep="${d.id}">${catIco(e?e.cat:'autre')}<span class="grow"><span class="t">${esc(d.note || (e?e.nom:'Dépense'))}</span><span class="s">${dayMonth(d.date)} · ${esc(e?e.nom:'Hors enveloppe')}</span></span><span class="amt">−${fmt(d.montant)}</span></button>`;
@@ -1378,8 +1435,8 @@ const pressed = id => document.querySelector(`#${id} [aria-pressed=true]`)?.data
 /* ---------- Où part mon argent ---------- */
 function donutData(k){
   const by = {};
-  S.depenses.filter(d=>monthKey(d.date)===k).forEach(d=>{ const id = d.fixeId ? '_fix' : (d.envId||'_'); (by[id] ||= {s:0,n:0}); by[id].s += d.montant; by[id].n++; });
-  return Object.entries(by).map(([id,v])=>{ const e = S.enveloppes.find(x=>x.id===id); return {id, nom:id==='_fix'?'Prélèvements':e?e.nom:'Hors enveloppe', cat:id==='_fix'?'logement':e?e.cat:'autre', s:v.s, n:v.n}; }).sort((a,b)=>b.s-a.s);
+  S.depenses.filter(d=>monthKey(d.date)===k).forEach(d=>{ const id = d.fixeId ? '_fix' : d.prevu ? '_prev' : (d.envId||'_'); (by[id] ||= {s:0,n:0}); by[id].s += d.montant; by[id].n++; });
+  return Object.entries(by).map(([id,v])=>{ const e = S.enveloppes.find(x=>x.id===id); return {id, nom:id==='_fix'?'Prélèvements':id==='_prev'?'Achats prévus':e?e.nom:'Hors enveloppe', cat:id==='_fix'?'logement':id==='_prev'?'tech':e?e.cat:'autre', s:v.s, n:v.n}; }).sort((a,b)=>b.s-a.s);
 }
 function donut(k){
   const data = donutData(k); if (!data.length) return '';
@@ -1601,7 +1658,7 @@ function restoreFile(){
 }
 function applyBackup(x){
   if (!x || !Array.isArray(x.comptes) || !Array.isArray(x.mouvements)) throw 0;
-  x.example = false; S = migrate(x); S.example = false; closeSheet(); commit('Sauvegarde restaurée');
+  x.example = false; S = ensurePrevus(migrate(x)); S.example = false; closeSheet(); commit('Sauvegarde restaurée');
 }
 function backupDue(){ if (S.example) return false; const l = S.lastBackup; return !l || (new Date(today()) - new Date(l))/864e5 >= 30; }
 
@@ -1918,7 +1975,9 @@ document.addEventListener('click', async e => {
   if (d.qnew){ const keep = qAmt; return swap(()=>envSheet(null, id=>quickSheet('dep',{envId:id, amt:keep}))); }
   if (d.editDep){ const x = S.depenses.find(y=>y.id===d.editDep); return inSheet ? swap(()=>depSheet(x)) : depSheet(x); }
   if (d.editMov){ const x = S.mouvements.find(y=>y.id===d.editMov); return inSheet ? swap(()=>movSheet(x)) : movSheet(x); }
+  if (d.bought){ const x = S.prevus.find(y=>y.id===d.bought); return swap(()=>boughtSheet(x)); }
   if (inSheet) return;
+  if (d.editPrevu) return prevuSheet(S.prevus.find(x=>x.id===d.editPrevu));
   if (d.tab) return go(d.tab);
   if (d.outil){ outil = d.outil; buzz(); return render(true); }
   if (d.month){ const n = shiftKey(viewK, +d.month); if (n<=curKey()){ viewK = n; sliceSel = null; buzz(); render(true); } return; }
@@ -1955,6 +2014,7 @@ document.addEventListener('click', async e => {
     case 'new-compte': return compteSheet();
     case 'new-env': return envSheet();
     case 'new-fixe': return fixeSheet();
+    case 'new-prevu': return prevuSheet();
     case 'history': return historySheet();
     case 'all-dep': return allDepSheet();
     case 'sim-plan': S.sim.mensuel = Math.min(1500, Math.round(plan().capacite/10)*10); return commit();
